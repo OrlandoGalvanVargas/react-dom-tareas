@@ -1,105 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useTareasSubtareas } from "./useTareasSubtareas";
 
 export default function ListaTareasSubtareas() {
+
+    const {
+        tareas,
+        editIndex,
+        editSubIndex,
+        setEditIndex,
+        setEditSubIndex,
+        agregarTarea,
+        eliminarTarea,
+        agregarSubtarea,
+        eliminarSubtarea,
+        editarTarea,
+        editarSubtarea
+    } = useTareasSubtareas();
 
     /* =======================
        STATE
     ======================= */
-    const [tareas, setTareas] = useState([]);
-    const [editIndex, setEditIndex] = useState(null);
-    const [editSubIndex, setEditSubIndex] = useState(null);
     const [inputTarea, setInputTarea] = useState("");
     const [subInputs, setSubInputs] = useState({});
 
-    /* =======================
-       EFFECTS
-    ======================= */
-    useEffect(() => {
-        const data = localStorage.getItem("tareas-sub");
-        if (data) setTareas(JSON.parse(data));
-    }, []);
+    const totalTareas = tareas.length;
+    const totalSubTareas = tareas.reduce((acc, t) => t.subtareas.length + acc, 0);
+    const tareasConSub = tareas.filter((t) => t.subtareas.length > 0 ).length;
+    const tareasVacias = totalTareas - tareasConSub;
 
-    useEffect(() => {
-        localStorage.setItem("tareas-sub", JSON.stringify(tareas));
-    }, [tareas]);
-
-    /* =======================
-       HANDLERS
-    ======================= */
-    const agregarTarea = () => {
-        if (!inputTarea.trim()) return;
-
-        setTareas([
-            ...tareas,
-            { texto: inputTarea.trim(), subtareas: [] }
-        ]);
-
-        setInputTarea("");
-    };
-
-    const eliminarTarea = (i) => {
-        setTareas(tareas.filter((_, index) => index !== i));
-    };
-
-    const agregarSubtarea = (i) => {
-        const texto = subInputs[i]?.trim();
-        if (!texto) return;
-
-        setTareas(
-            tareas.map((t, index) =>
-                index === i
-                    ? { ...t, subtareas: [...t.subtareas, texto] }
-                    : t
-            )
-        );
-
-        setSubInputs({ ...subInputs, [i]: "" });
-    };
-
-    const eliminarSubtarea = (i, si) => {
-        setTareas(
-            tareas.map((t, index) =>
-                index === i
-                    ? {
-                        ...t,
-                        subtareas: t.subtareas.filter((_, s) => s !== si)
-                    }
-                    : t
-            )
-        );
-    };
-
-    const guardarEdicion = (i, texto) => {
-        if (!texto.trim()) return;
-
-        setTareas(
-            tareas.map((t, index) =>
-                index === i ? { ...t, texto } : t
-            )
-        );
-
-        setEditIndex(null);
-    };
-
-    const guardarEdicionSub = (i, si, texto) => {
-        if (!texto.trim()) return;
-
-        setTareas(
-            tareas.map((t, index) =>
-                index === i
-                    ? {
-                        ...t,
-                        subtareas: t.subtareas.map((st, s) =>
-                            s === si ? texto : st
-                        )
-                    }
-                    : t
-            )
-        );
-
-        setEditIndex(null);
-        setEditSubIndex(null);
-    };
 
     /* =======================
        RENDER
@@ -108,6 +36,16 @@ export default function ListaTareasSubtareas() {
         <div className="p-4 max-w-xl mx-auto">
             <h1 className="text-xl font-bold mb-4">Tareas con Subtareas</h1>
 
+            <div>
+                <h2>Estadisticas</h2>
+                <ul>
+                    <li id="1">Total de tareas: {totalTareas}</li>
+                    <li id="2">Total de subtareas: {totalSubTareas}</li>
+                    <li id="3">Total de tareas con sub: {tareasConSub}</li>
+                    <li id="4">Total de tareas vacias: {tareasVacias}</li>
+                </ul>
+            </div>
+
             <div className="flex gap-2 mb-4">
                 <input
                     className="border p-2 flex-1"
@@ -115,7 +53,7 @@ export default function ListaTareasSubtareas() {
                     onChange={e => setInputTarea(e.target.value)}
                     placeholder="Nueva tarea..."
                 />
-                <button onClick={agregarTarea}>Agregar</button>
+                <button onClick={() => agregarTarea(inputTarea)}>Agregar</button>
             </div>
 
             <ul>
@@ -126,7 +64,7 @@ export default function ListaTareasSubtareas() {
                                 <input
                                     className="border p-1"
                                     defaultValue={t.texto}
-                                    onBlur={e => guardarEdicion(i, e.target.value)}
+                                    onBlur={e => editarTarea(i, e.target.value)}
                                 />
                             </>
                         ) : (
@@ -144,7 +82,7 @@ export default function ListaTareasSubtareas() {
                                         <input
                                             defaultValue={st}
                                             onBlur={e =>
-                                                guardarEdicionSub(i, si, e.target.value)
+                                                editarSubtarea(i, si, e.target.value)
                                             }
                                         />
                                     ) : (
@@ -173,7 +111,7 @@ export default function ListaTareasSubtareas() {
                             }
                             placeholder="Agregar subtarea..."
                         />
-                        <button onClick={() => agregarSubtarea(i)}>+</button>
+                        <button onClick={() => agregarSubtarea(i, subInputs[i])}>+</button>
                     </li>
                 ))}
             </ul>
